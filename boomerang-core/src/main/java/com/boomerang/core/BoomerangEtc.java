@@ -1,5 +1,7 @@
 package com.boomerang.core;
 
+import com.boomerang.proto.Namespace;
+
 import java.util.Properties;
 
 /**

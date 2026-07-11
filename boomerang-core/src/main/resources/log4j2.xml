@@ -6,14 +6,15 @@
                    https://logging.apache.org/xml/ns/log4j-config-2.xsd">
     <Appenders>
         <Console name="CONSOLE">
-            <PatternLayout pattern="[%d] [%t/%p]: %m%n"/>
+            <PatternLayout pattern="[%d] [%t/%p] [%c]: %m%n"/>
         </Console>
 
-        <File name="MAIN" fileName="logs/main.json">
-            <JsonTemplateLayout/>
+        <File name="MAIN" fileName="logs/main.log">
+            <PatternLayout pattern="[%d] [%t/%p] [%c]: %m%n"/>
         </File>
 
         <File name="DEBUG" fileName="logs/debug.log">
+            <!--<JsonTemplateLayout/>-->
             <PatternLayout pattern="[%d] [%t/%p] [%c]: %m%n"/>
         </File>
 
@@ -21,11 +22,11 @@
 
     <Loggers>
         <Root level="INFO">
-            <AppenderRef ref="CONSOLE" level="WARN"/>
+            <AppenderRef ref="CONSOLE"/>
             <AppenderRef ref="MAIN"/>
         </Root>
 
-        <Logger name="org.example" level="DEBUG">
+        <Logger name="com.boomerang" level="DEBUG">
             <AppenderRef ref="DEBUG"/>
         </Logger>
     </Loggers>

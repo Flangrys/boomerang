@@ -1,4 +1,4 @@
-package com.boomerang.core;
+package com.boomerang.proto;
 
 public record Namespace(String path, String resource) {
     public Namespace {
