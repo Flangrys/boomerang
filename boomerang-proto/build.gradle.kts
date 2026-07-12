@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "com.boomerang.proto"
-version = "1.0.0-ALPHA"
+version = rootProject.version
 
 repositories {
     mavenCentral()
