@@ -4,6 +4,7 @@ import com.boomerang.core.cli.BoomerangCli;
 import com.boomerang.core.exceptions.InitializationException;
 import com.boomerang.core.exceptions.TerminationException;
 import com.boomerang.core.net.BoomerangNetworkBackend;
+import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,12 +14,15 @@ public final class BoomerangServer implements Service {
     private static final Logger logger = LogManager.getLogger(BoomerangServer.class);
     private static final AtomicReference<ServerStatus> SERVER_STATUS = new AtomicReference<>(ServerStatus.STARTING);
 
-    private static final BoomerangCli boomerangCli = new BoomerangCli();
-    private static final BoomerangEtc boomerangEtc = new BoomerangEtc();
+    private final BoomerangCli boomerangCli;
+    private final BoomerangEtc boomerangEtc;
 
     private final BoomerangNetworkBackend serverNetBackend;
 
-    public BoomerangServer(String[] args) {
+    public BoomerangServer(BoomerangCli boomerangCli) {
+        this.boomerangCli = boomerangCli;
+
+        this.boomerangEtc = new BoomerangEtc();
         this.serverNetBackend = new BoomerangNetworkBackend();
     }
 
@@ -57,7 +61,9 @@ public final class BoomerangServer implements Service {
     }
 
     public static void main(String[] args) {
-        final BoomerangServer boomerangServer = new BoomerangServer(args);
+        final BoomerangCli boomerangCli = BoomerangCli.parse(args);
+        final BoomerangServer boomerangServer = new BoomerangServer(boomerangCli);
+
         final Runtime runtime = Runtime.getRuntime();
 
         runtime.addShutdownHook(BoomerangThread.ofPlatform("shutdown").unstarted(boomerangServer::stop));
