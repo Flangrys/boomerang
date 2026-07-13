@@ -1,6 +1,5 @@
 package com.boomerang.proto.types;
 
-import com.boomerang.proto.Type;
 import com.boomerang.proto.exceptions.CodecException;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
@@ -230,6 +229,22 @@ public final class Numeric {
             }
 
             return buffer.readUnsignedShort();
+        }
+    };
+    public static final Type<Short> UBYTE = new Type<>() {
+        @Override
+        public void write(@NotNull ByteBuf buffer, Short value) throws IOException {
+            buffer.ensureWritable(2);
+            buffer.writeByte(value &  0xFF);
+        }
+
+        @Override
+        public Short read(@NotNull ByteBuf buffer) throws IOException {
+            if (!buffer.isReadable(2)) {
+                throw new CodecException("There is not enough bytes to read a unsign byte in the current buffer");
+            }
+
+            return buffer.readUnsignedByte();
         }
     };
 }

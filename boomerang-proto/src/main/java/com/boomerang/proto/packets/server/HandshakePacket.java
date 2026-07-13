@@ -1,10 +1,13 @@
 package com.boomerang.proto.packets.server;
 
 import com.boomerang.proto.ConnectionIntention;
-import com.boomerang.proto.Type;
+import com.boomerang.proto.Namespace;
+import com.boomerang.proto.packets.Packet;
+import com.boomerang.proto.types.Type;
 import com.boomerang.proto.exceptions.CodecException;
+import com.boomerang.proto.codecs.Codec;
 import com.boomerang.proto.packets.ServerboundPacket;
-import com.boomerang.proto.packets.SwitchingProtocolsPacket;
+import com.boomerang.proto.packets.IntentionPacket;
 import com.boomerang.proto.types.Numeric;
 import com.boomerang.proto.types.Primitive;
 import com.boomerang.proto.types.Protocol;
@@ -18,9 +21,9 @@ public record HandshakePacket(
         String serverAddress,
         Integer serverPort,
         ConnectionIntention intentions
-) implements ServerboundPacket.Handshake, SwitchingProtocolsPacket {
+) implements ServerboundPacket, Packet.Handshake, IntentionPacket {
 
-    private static final Type<HandshakePacket> CODEC = new Type<HandshakePacket>() {
+    public static final Codec<HandshakePacket> CODEC = new Codec<>() {
         @Override
         public void write(@NotNull ByteBuf buffer, HandshakePacket value) throws IOException {
             throw new CodecException("Handshake packets are not writable");
@@ -36,14 +39,4 @@ public record HandshakePacket(
             return new HandshakePacket(protocolVersion, serverAddress, serverPort, intention);
         }
     };
-
-    @Override
-    public int id() {
-        return 0x00;
-    }
-
-    @Override
-    public Type<HandshakePacket> codec() {
-        return CODEC;
-    }
 }

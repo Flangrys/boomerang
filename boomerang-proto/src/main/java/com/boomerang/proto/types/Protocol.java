@@ -1,7 +1,6 @@
 package com.boomerang.proto.types;
 
 import com.boomerang.proto.ConnectionIntention;
-import com.boomerang.proto.Type;
 import com.boomerang.proto.exceptions.CodecException;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;

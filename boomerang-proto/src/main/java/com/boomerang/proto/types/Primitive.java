@@ -1,6 +1,5 @@
 package com.boomerang.proto.types;
 
-import com.boomerang.proto.Type;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 
