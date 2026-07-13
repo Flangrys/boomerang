@@ -1,4 +1,4 @@
-package com.boomerang.proto;
+package com.boomerang.proto.types;
 
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
@@ -118,5 +118,18 @@ public interface Type<T> {
                 return type.read(buffer);
             }
         };
+    }
+
+    default int size(@NotNull ByteBuf buffer, T value) throws IOException {
+        try {
+            buffer.markWriterIndex();
+
+            this.write(buffer, value);
+
+            return buffer.writerIndex() - buffer.readerIndex();
+
+        } finally {
+            buffer.resetWriterIndex();
+        }
     }
 }
