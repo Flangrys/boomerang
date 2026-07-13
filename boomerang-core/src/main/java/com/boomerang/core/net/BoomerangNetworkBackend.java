@@ -33,11 +33,9 @@ public final class BoomerangNetworkBackend implements Service {
         }
 
         this.serverAddress = new InetSocketAddress(serverHost, serverPort);
-
-        this.serverBootstrap = new ServerBootstrap();
-
         this.serverBossGroup = new NioEventLoopGroup(1);
         this.serverWorkerGroup = new NioEventLoopGroup();
+        this.serverBootstrap = new ServerBootstrap();
     }
 
     public BoomerangNetworkBackend(int serverPort) {

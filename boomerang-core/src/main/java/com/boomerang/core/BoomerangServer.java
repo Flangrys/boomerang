@@ -24,6 +24,8 @@ public final class BoomerangServer implements Service {
 
     @Override
     public void start() {
+        BoomerangLock.acquireLock();
+
         if (!SERVER_STATUS.compareAndSet(ServerStatus.STARTING, ServerStatus.RUNNING)) {
             throw new RuntimeException("Cannot start the server in this state");
         }
@@ -55,13 +57,10 @@ public final class BoomerangServer implements Service {
     }
 
     public static void main(String[] args) {
-        BoomerangLock.acquireLock();
-
         final BoomerangServer boomerangServer = new BoomerangServer(args);
-
         final Runtime runtime = Runtime.getRuntime();
-        runtime.addShutdownHook(new Thread(boomerangServer::stop));
-        runtime.addShutdownHook(new Thread(BoomerangLock::revokeLock));
+
+        runtime.addShutdownHook(BoomerangThread.ofPlatform("shutdown").unstarted(boomerangServer::stop));
 
         boomerangServer.start();
     }
