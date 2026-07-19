@@ -21,13 +21,19 @@
     </Appenders>
 
     <Loggers>
+        <Logger name="com.boomerang" level="DEBUG" additivity="false">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="DEBUG"/>
+        </Logger>
+
+        <Logger name="io.netty" level="DEBUG" additivity="false">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="DEBUG"/>
+        </Logger>
+
         <Root level="INFO">
             <AppenderRef ref="CONSOLE"/>
             <AppenderRef ref="MAIN"/>
         </Root>
-
-        <Logger name="com.boomerang" level="DEBUG">
-            <AppenderRef ref="DEBUG"/>
-        </Logger>
     </Loggers>
 </Configuration>
