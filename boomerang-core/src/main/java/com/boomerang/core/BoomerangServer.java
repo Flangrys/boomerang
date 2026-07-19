@@ -17,9 +17,11 @@ public final class BoomerangServer implements Service {
     private static final BoomerangEtc boomerangEtc = new BoomerangEtc();
 
     private final BoomerangNetworkBackend serverNetBackend;
+    private final BoomerangRegistryBackend serverRegistryBackend;
 
     public BoomerangServer(String[] args) {
         this.serverNetBackend = new BoomerangNetworkBackend();
+        this.serverRegistryBackend = new BoomerangRegistryBackend();
     }
 
     @Override
@@ -30,10 +32,13 @@ public final class BoomerangServer implements Service {
             throw new RuntimeException("Cannot start the server in this state");
         }
 
-        try {
-            logger.info("Starting Boomerang Server...");
+        logger.info("Starting Boomerang Server...");
 
-            logger.trace("Starting network backend...");
+        try {
+            logger.debug("Starting registry backend...");
+            this.serverRegistryBackend.start();
+
+            logger.debug("Starting network backend...");
             this.serverNetBackend.start();
 
         } catch (InitializationException exc) {
@@ -47,9 +52,14 @@ public final class BoomerangServer implements Service {
             throw new RuntimeException("Cannot stop the server in this state");
         }
 
+        logger.info("Stopping Boomerang Server...");
+
         try {
-            logger.info("Stopping Boomerang Server...");
+            logger.debug("Stopping Boomerang Server...");
             this.serverNetBackend.stop();
+
+            logger.debug("Stopping registry backend...");
+            this.serverRegistryBackend.stop();
 
         } catch (TerminationException exc) {
             throw new RuntimeException("An exception occurred during the finish-up");
@@ -61,6 +71,7 @@ public final class BoomerangServer implements Service {
         final Runtime runtime = Runtime.getRuntime();
 
         runtime.addShutdownHook(BoomerangThread.ofPlatform("shutdown").unstarted(boomerangServer::stop));
+        runtime.addShutdownHook(BoomerangThread.ofPlatform("shutdown").unstarted(BoomerangLock::revokeLock));
 
         boomerangServer.start();
     }
