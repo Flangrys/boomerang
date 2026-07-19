@@ -4,27 +4,35 @@ import com.boomerang.proto.types.Numeric;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.netty.handler.codec.CodecException;
 
 import java.util.List;
 
 public class InboundPacketFrameHandler extends ByteToMessageDecoder {
-    private static final Logger logger = LogManager.getLogger(InboundPacketFrameHandler.class);
-
+    public static final String HANDLER_NAME = "inbound_packet_frame_handler";
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        final int packetSize = Numeric.VARINT.read(in);
+        if (!in.isReadable()) {
+            return;
+        }
 
-        if (!in.isReadable(packetSize)) {
-            logger.warn("Unable determine the frame size for this packet.");
+        try {
+            in.markReaderIndex();
 
-        } else {
-            final var packetFrame = ctx.alloc().buffer(packetSize);
+            final int readableSize = in.readableBytes();
+            final int packetSize = Numeric.VARINT.read(in);
 
-            in.readBytes(packetFrame);
+            if (packetSize != 0 && in.isReadable(packetSize)) {
+                final ByteBuf packetFrame = in.readRetainedSlice(packetSize);
 
-            out.add(packetFrame);
+                out.add(packetFrame);
+
+            } else {
+                in.resetReaderIndex();
+            }
+
+        } catch (CodecException e) {
+            in.resetReaderIndex();
         }
     }
 }

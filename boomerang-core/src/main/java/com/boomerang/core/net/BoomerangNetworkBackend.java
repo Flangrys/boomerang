@@ -1,5 +1,6 @@
 package com.boomerang.core.net;
 
+import com.boomerang.core.BoomerangThread;
 import com.boomerang.core.Service;
 import com.boomerang.core.net.handlers.BoomerangChannelHandler;
 import io.netty.bootstrap.ServerBootstrap;
@@ -13,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.ThreadFactory;
 
 public final class BoomerangNetworkBackend implements Service {
     private static final Logger logger = LogManager.getLogger(BoomerangNetworkBackend.class);
@@ -32,10 +34,12 @@ public final class BoomerangNetworkBackend implements Service {
             throw new IllegalArgumentException("serverPort must be between 0 and 65535");
         }
 
-        this.serverAddress = new InetSocketAddress(serverHost, serverPort);
-        this.serverBossGroup = new NioEventLoopGroup(1);
-        this.serverWorkerGroup = new NioEventLoopGroup();
+        ThreadFactory serverThreadFactory = BoomerangThread.ofPlatform("netty").factory();
+
         this.serverBootstrap = new ServerBootstrap();
+        this.serverAddress = new InetSocketAddress(serverHost, serverPort);
+        this.serverBossGroup = new NioEventLoopGroup(1, serverThreadFactory);
+        this.serverWorkerGroup = new NioEventLoopGroup(4, serverThreadFactory);
     }
 
     public BoomerangNetworkBackend(int serverPort) {
@@ -59,7 +63,7 @@ public final class BoomerangNetworkBackend implements Service {
 
         try {
             // Almacena el futuro de este canal que sera notificado cuando haya una nueva conexion.
-            final ChannelFuture channelFuture = this.serverBootstrap.bind().sync();
+            final ChannelFuture channelFuture = this.serverBootstrap.bind();
 
             // Almacena el futuro de este canal que sera notificado cuando se cierre este canal.
             final ChannelFuture closeChannelFuture = channelFuture.channel().closeFuture().sync();
@@ -67,8 +71,6 @@ public final class BoomerangNetworkBackend implements Service {
         } catch (InterruptedException exc) {
             throw new RuntimeException("Something occurred at the network execution thread", exc);
         }
-
-
     }
 
     @Override
