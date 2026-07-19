@@ -1,13 +1,10 @@
 package com.boomerang.proto.packets.server;
 
 import com.boomerang.proto.ConnectionIntention;
-import com.boomerang.proto.Namespace;
-import com.boomerang.proto.packets.Packet;
-import com.boomerang.proto.types.Type;
-import com.boomerang.proto.exceptions.CodecException;
 import com.boomerang.proto.codecs.Codec;
-import com.boomerang.proto.packets.ServerboundPacket;
+import com.boomerang.proto.exceptions.CodecException;
 import com.boomerang.proto.packets.IntentionPacket;
+import com.boomerang.proto.packets.ServerboundPacket;
 import com.boomerang.proto.types.Numeric;
 import com.boomerang.proto.types.Primitive;
 import com.boomerang.proto.types.Protocol;
@@ -21,7 +18,7 @@ public record HandshakePacket(
         String serverAddress,
         Integer serverPort,
         ConnectionIntention intentions
-) implements ServerboundPacket, Packet.Handshake, IntentionPacket {
+) implements ServerboundPacket.Handshake, ServerboundPacket, IntentionPacket {
 
     public static final Codec<HandshakePacket> CODEC = new Codec<>() {
         @Override
@@ -38,5 +35,14 @@ public record HandshakePacket(
 
             return new HandshakePacket(protocolVersion, serverAddress, serverPort, intention);
         }
+
+        public int id() {
+            return 0x0;
+        }
     };
+
+    @Override
+    public int id() {
+        return 0x0;
+    }
 }

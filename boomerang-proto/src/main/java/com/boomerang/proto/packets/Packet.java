@@ -2,9 +2,9 @@ package com.boomerang.proto.packets;
 
 import com.boomerang.proto.ConnectionBound;
 import com.boomerang.proto.ConnectionState;
-import com.boomerang.proto.codecs.Codec;
+import com.boomerang.proto.Identified;
 
-public interface Packet {
+public interface Packet extends Identified {
 
     ConnectionBound bound();
 
