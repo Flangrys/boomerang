@@ -1,0 +1,21 @@
+name: Deploy Boomerang Javadocs
+
+on:
+  push:
+    branches:
+      - page/javadocs
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Deploy Boomerang Javadocs
+        uses: MathieuSoysal/Javadoc-publisher.yml@v3.0.2
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          javadoc-branch: production
+          target-folder: javadoc-page
+          java-version: 17
+          project: gradle

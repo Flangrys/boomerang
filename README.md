@@ -1,6 +1,7 @@
 # Minecraft Boomerang
 
 ---
+[![Javadoc](https://img.shields.io/badge/JavaDoc-Online-green)](https://flangrys.github.io/boomerang/javadoc/)
 
 Boomerang is an open-source, feature-rich and highly-customizable Minecraft API library that aims developers to 
 
