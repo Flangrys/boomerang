@@ -43,11 +43,11 @@ public record Namespace(
 
     public Namespace {
         if (domain == null || domain.isBlank()) {
-            throw new IllegalArgumentException("Namespaces should start with a valid domain");
+            throw new IllegalArgumentException("Namespaces should start with namespace valid domain");
         }
 
         if (resource == null || resource.isBlank()) {
-            throw new IllegalArgumentException("Namespaces should start with a valid resource");
+            throw new IllegalArgumentException("Namespaces should start with namespace valid resource");
         }
 
         domain = domain.toLowerCase(Locale.ENGLISH);
@@ -61,7 +61,7 @@ public record Namespace(
     public Schema getSchema() {
         final var parent = this.isTag()
                 ? this.domain.subSequence(1, 9)
-                : this.domain.subSequence(0, 9);
+                : this.domain.subSequence(0, 8);
 
         return switch (parent.toString()) {
             case MINECRAFT -> Schema.MINECRAFT;
@@ -82,7 +82,7 @@ public record Namespace(
                 .anyMatch(Namespace::testLegalCharactersInNamespace);
 
         if (validNamespaceCharacters) {
-            throw new IllegalArgumentException("Illegal characters in namespace. Only allowed [a-z0-9/._-] : " + namespaceMaybe);
+            throw new IllegalArgumentException("Illegal characters in namespace. Only allowed [namespace-z0-9/._-] : " + namespaceMaybe);
         }
 
         final var namespace = namespaceMaybe.split(":");
