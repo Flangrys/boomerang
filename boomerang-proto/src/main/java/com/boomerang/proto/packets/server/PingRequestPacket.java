@@ -8,22 +8,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
-public record PingRequestPacket(
-        int id,
-        Long timestamp
-) implements ServerboundPacket.Status, ServerboundPacket {
+public record PingRequestPacket(Long timestamp) implements ServerboundPacket.Status, ServerboundPacket {
     public static final Codec<PingRequestPacket> CODEC = new Codec<PingRequestPacket>() {
         @Override
         public void write(@NotNull ByteBuf buffer, PingRequestPacket packet) throws IOException {
-            Numeric.VARINT.write(buffer, packet.id());
             Numeric.LONG.write(buffer, packet.timestamp());
         }
 
         @Override
         public PingRequestPacket read(@NotNull ByteBuf buffer) throws IOException {
-            final var id = Numeric.VARINT.read(buffer);
             final var timestamp = Numeric.LONG.read(buffer);
-            return new PingRequestPacket(id, timestamp);
+            return new PingRequestPacket(timestamp);
         }
 
         @Override
@@ -31,4 +26,9 @@ public record PingRequestPacket(
             return 0x1;
         }
     };
+
+    @Override
+    public int id() {
+        return 0x1;
+    }
 }
