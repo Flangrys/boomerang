@@ -7,9 +7,13 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 
 public final class Numeric {
+    public static final int VARNUM_SIZE = 5, VARNUM_SEGMENT_MASK = 0x7F, VARNUM_CONTINUE_MASK = 0x80;
+
+    public static boolean hasContinuationMask(int value) {
+        return (value & VARNUM_CONTINUE_MASK) == VARNUM_SEGMENT_MASK;
+    }
 
     public static final Type<Byte> BYTE = new Type<>() {
-
         @Override
         public void write(@NotNull ByteBuf buffer, Byte value) throws IOException {
             buffer.ensureWritable(1);
@@ -19,7 +23,7 @@ public final class Numeric {
         @Override
         public Byte read(@NotNull ByteBuf buffer) throws IOException {
             if (!buffer.isReadable(1)) {
-                throw new CodecException("There is not enough length to read a byte");
+                throw new CodecException("There is not enough length to read namespace byte");
             }
 
             return buffer.readByte();
@@ -27,92 +31,108 @@ public final class Numeric {
     };
 
     public static final Type<Integer> VARINT = new Type<>() {
-        public static final int VARINT_SIZE = 5;
-        public static final int VARINT_SEGMENT_MASK = 0x7F;
-        public static final int VARINT_CONTINUE_MASK = 0x80;
-
         @Override
         public void write(@NotNull ByteBuf buffer, Integer value) throws IOException {
-            buffer.ensureWritable(VARINT_SIZE);
+            buffer.ensureWritable(VARNUM_SIZE);
 
-            while ((value & 0xFFFFFF80) != 0L) {
-                int segmentedValue = (value & VARINT_SEGMENT_MASK) | VARINT_CONTINUE_MASK;
+            while ((value & ~VARNUM_CONTINUE_MASK) != 0) {
+                int segmentedValue = (value & VARNUM_SEGMENT_MASK) | VARNUM_CONTINUE_MASK;
 
                 buffer.writeByte(segmentedValue);
 
                 value >>>= 7;
             }
 
-            int continuedValue = value & VARINT_SEGMENT_MASK;
+            int continuedValue = value & VARNUM_SEGMENT_MASK;
             buffer.writeByte(continuedValue);
         }
 
         @Override
         public Integer read(@NotNull ByteBuf buffer) throws IOException {
             if (!buffer.isReadable(1)) {
-                throw new CodecException("There is not enough bytes to read in the current buffer", null);
+                throw new CodecException("There is not enough bytes to read in the current buffer " + buffer);
             }
 
             int value = 0;
-            int position = 0;
-            byte current;
+            int bytesRead = 0, shift = 0;
+            boolean keepReading = true;
 
-            while (((current = buffer.readByte()) & VARINT_CONTINUE_MASK) != 0L) {
-                value |= (current & VARINT_SEGMENT_MASK) << position;
+            while (bytesRead < 5 && keepReading) {
+                if (!buffer.isReadable()) {
+                    keepReading = false;
 
-                position += 7;
-
-                if (position > 35) {
-                    throw new CodecException("The length of this varint is too long");
+                } else {
+                    byte current = buffer.readByte();
+                    value |= (current & VARNUM_SEGMENT_MASK) << shift;
+                    shift += 7;
+                    bytesRead++;
+                    keepReading = (current & VARNUM_CONTINUE_MASK) != 0;
                 }
             }
 
-            return value | (current << position);
+            if (keepReading && bytesRead == 5) {
+                throw new CodecException("VarInt too long");
+            }
+
+            if (!keepReading && bytesRead == 0) {
+                throw new IndexOutOfBoundsException("VarInt too short");
+            }
+
+            return value;
         }
     };
 
     public static final Type<Long> VARLONG = new Type<>() {
-        public static final int VARLONG_SIZE = 5;
-        public static final int VARLONG_SEGMENT_MASK = 0x7F;
-        public static final int VARLONG_CONTINUE_MASK = 0x80;
-
         @Override
         public void write(@NotNull ByteBuf buffer, Long value) throws IOException {
-            buffer.ensureWritable(VARLONG_SIZE);
+            buffer.ensureWritable(VARNUM_SIZE);
 
-            while ((value & 0xFFFFFF80L) != 0L) {
-                int segmentedValue = (int) (value & VARLONG_SEGMENT_MASK) | VARLONG_CONTINUE_MASK;
+            while ((value & ~VARNUM_CONTINUE_MASK) != 0) {
+                int segmentedValue = (int) (value & VARNUM_SEGMENT_MASK) | VARNUM_CONTINUE_MASK;
 
                 buffer.writeByte(segmentedValue);
 
                 value >>>= 7;
             }
 
-            int continuedValue = (int) (value & VARLONG_CONTINUE_MASK);
+            int continuedValue = (int) (value & VARNUM_CONTINUE_MASK);
             buffer.writeByte(continuedValue);
         }
 
         @Override
         public Long read(@NotNull ByteBuf buffer) throws IOException {
             if (!buffer.isReadable(1)) {
-                throw new CodecException("There is not enough bytes to read in the current buffer", null);
+                throw new CodecException("There is not enough bytes to read in the current buffer " + buffer);
             }
 
             long value = 0;
-            int position = 0;
-            byte current;
 
-            while (((current = buffer.readByte()) & VARLONG_SEGMENT_MASK) != 0L) {
-                value |= (long) (current & VARLONG_SEGMENT_MASK) << position;
+            int bytesRead = 0, shift = 0;
+            boolean keepReading = true;
 
-                position += 7;
+            while (bytesRead < 5 && keepReading) {
+                if (buffer.isReadable()) {
+                    byte current = buffer.readByte();
 
-                if (position > 35) {
-                    throw new CodecException("The length of this varlong is too long");
+                    value |= (long) (current & VARNUM_SEGMENT_MASK) << shift;
+                    shift += 7;
+                    bytesRead++;
+                    keepReading = (current & VARNUM_CONTINUE_MASK) != 0;
+
+                } else {
+                    keepReading = false;
                 }
             }
 
-            return value | ((long) current << position);
+            if (keepReading && bytesRead == 5) {
+                throw new CodecException("VarLong too long");
+            }
+
+            if (!keepReading && bytesRead == 0) {
+                throw new IndexOutOfBoundsException("VarLong too short");
+            }
+
+            return value;
         }
     };
 
@@ -132,7 +152,7 @@ public final class Numeric {
                 case TRUE -> true;
                 case FALSE -> false;
 
-                default -> throw new CodecException("Cannot read a boolean from an arbitrary value");
+                default -> throw new CodecException("Cannot read boolean from an arbitrary value");
             };
         }
     };
@@ -149,7 +169,7 @@ public final class Numeric {
         @Override
         public Long read(@NotNull ByteBuf buffer) throws IOException {
             if (!buffer.isReadable(LONG_SIZE)) {
-                throw new CodecException("There is not enough bytes to read a long in the current buffer");
+                throw new CodecException("There is not enough bytes to read long in the current buffer");
             }
 
             return buffer.readLong();
@@ -168,7 +188,7 @@ public final class Numeric {
         @Override
         public Float read(@NotNull ByteBuf buffer) throws IOException {
             if (!buffer.isReadable(FLOAT_SIZE)) {
-                throw new CodecException("There is not enough bytes to read a float in the current buffer");
+                throw new CodecException("There is not enough bytes to read float in the current buffer");
             }
 
             return buffer.readFloat();
@@ -187,7 +207,7 @@ public final class Numeric {
         @Override
         public Double read(@NotNull ByteBuf buffer) throws IOException {
             if (!buffer.isReadable(DOUBLE_SIZE)) {
-                throw new CodecException("There is not enough bytes to read a double in the current buffer");
+                throw new CodecException("There is not enough bytes to read double in the current buffer");
             }
 
             return buffer.readDouble();
@@ -206,7 +226,7 @@ public final class Numeric {
         @Override
         public Short read(@NotNull ByteBuf buffer) throws IOException {
             if (!buffer.isReadable(SHORT_SIZE)) {
-                throw new CodecException("There is not enough bytes to read a short in the current buffer");
+                throw new CodecException("There is not enough bytes to read short in the current buffer");
             }
 
             return buffer.readShort();
@@ -225,7 +245,7 @@ public final class Numeric {
         @Override
         public Integer read(@NotNull ByteBuf buffer) throws IOException {
             if (!buffer.isReadable(USHORT_SIZE)) {
-                throw new CodecException("There is not enough bytes to read a short in the current buffer");
+                throw new CodecException("There is not enough bytes to read short in the current buffer");
             }
 
             return buffer.readUnsignedShort();
@@ -235,13 +255,13 @@ public final class Numeric {
         @Override
         public void write(@NotNull ByteBuf buffer, Short value) throws IOException {
             buffer.ensureWritable(2);
-            buffer.writeByte(value &  0xFF);
+            buffer.writeByte(value & 0xFF);
         }
 
         @Override
         public Short read(@NotNull ByteBuf buffer) throws IOException {
             if (!buffer.isReadable(2)) {
-                throw new CodecException("There is not enough bytes to read a unsign byte in the current buffer");
+                throw new CodecException("There is not enough bytes to read unsign byte in the current buffer");
             }
 
             return buffer.readUnsignedByte();

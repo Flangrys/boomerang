@@ -6,15 +6,34 @@ import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public final class Protocol {
 
-    public static final Type<ConnectionIntention> INTENTION = Numeric.VARINT.transform(
-            ConnectionIntention::intention, ConnectionIntention::fromValue
-    );
+    public static final Type<ConnectionIntention> INTENTION = new Type<>() {
+        @Override
+        public void write(@NotNull ByteBuf buffer, ConnectionIntention value) throws IOException {
+            Numeric.VARINT.write(buffer, value.intention());
+        }
 
-    public static final Type<UUID> UUID = new Type<UUID>() {
+        @Override
+        public ConnectionIntention read(@NotNull ByteBuf buffer) throws IOException {
+            final int intentionOrdinal = Numeric.VARINT.read(buffer);
+            final var intentionValue = ConnectionIntention.fromValue(intentionOrdinal);
+
+            if (intentionValue == null) {
+                throw new CodecException("Illegal intention value read: ", intentionOrdinal);
+
+            } else {
+                return intentionValue;
+            }
+        }
+    };
+
+    public static final Type<UUID> UUID = new Type<>() {
         @Override
         public void write(@NotNull ByteBuf buffer, UUID value) throws IOException {
             Numeric.LONG.write(buffer, value.getMostSignificantBits());
@@ -27,6 +46,18 @@ public final class Protocol {
                     Numeric.LONG.read(buffer),
                     Numeric.LONG.read(buffer)
             );
+        }
+    };
+
+    public static final Type<ByteBuf> BUFFER = new Type<>() {
+        @Override
+        public void write(@NotNull ByteBuf buffer, ByteBuf value) throws IOException {
+            buffer.writeBytes(value);
+        }
+
+        @Override
+        public ByteBuf read(@NotNull ByteBuf buffer) throws IOException {
+            return buffer.copy();
         }
     };
 
@@ -97,5 +128,4 @@ public final class Protocol {
     public static <S> Type<List<S>> list(Type<S> type) {
         return list(type, Integer.MAX_VALUE);
     }
-
 }
