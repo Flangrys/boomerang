@@ -3,7 +3,7 @@ name: Deploy Boomerang Javadocs
 on:
   push:
     branches:
-      - page/javadocs
+      - master
 
 jobs:
   publish:
@@ -15,7 +15,7 @@ jobs:
         uses: MathieuSoysal/Javadoc-publisher.yml@v3.0.2
         with:
           GITHUB_TOKEN: ${{ github.token }}
-          javadoc-branch: production
+          javadoc-branch: docs/javadocs
           target-folder: javadoc-page
           java-version: 17
           project: gradle
