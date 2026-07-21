@@ -8,7 +8,7 @@ val aggregateJavadocs = tasks.register<Javadoc>("allJavadoc") {
 
     classpath = files(javaProjects.map { it.the<SourceSetContainer>()["main"].compileClasspath })
 
-    destinationDir = file("${rootProject.layout.buildDirectory.get()}/docs/javadocs")
+    destinationDir = file("${rootProject.layout.buildDirectory.get()}/docs/javadoc")
 
     (options as StandardJavadocDocletOptions).apply {
         encoding = "UTF-8"
