@@ -12,17 +12,18 @@ import java.util.Locale;
  * nombre del grupo padre que contiene estos recursos, mientras que el path suele verse como la ruta de un directorio
  * o simplemente un nombre.
  *
- * <h3>Spec</h3>
+ * <h2>Spec</h2>
  * Formalmente un {@link Namespace} se define como una secuencia de caracteres alfanumericos, separados por puntos,
  * guines medios, giones bajos y barras curvas, este ultimo siendo esclusivo del path. Separados por un ':' de modo
  * que a la izquierda se encuentre el dominio y del lado derecho el path del recurso.
- *
  * <pre>
+ * <code>
  *  word         := [a-z0-9]+
  *  domain       := word(?:[._-]+word)*
  *  path         := word(?:[._/-]+word)*
  *  namespace    := domain:path
- * <pre>
+ * </code>
+ * </pre>
  *
  * @see <a href="https://www.minecraft.net/en-us/article/minecraft-snapshot-17w43a">Snapshot 1.13</a>
  */
@@ -105,7 +106,6 @@ public record Namespace(
      * Construye un {@link Namespace} dado un dominio y una ruta, uniendo ambas unidades con
      * {@link Namespace#NAMESPACE_DIVIDER} y sin validar la morfología del namespace producido.
      *
-     * <h2>IMPORTANTE</h2>
      * <p>Este constructor esta pensado escenarios donde las garantias de que cualquier secuencia aleatoria de
      * caracteres sea un {@link Namespace} sean del cien por cien. Recomendamos utilizar este constructor solamente
      * cuando sea estrictamente necesario hardcodear un namespace.
@@ -145,6 +145,14 @@ public record Namespace(
         return domain + ":" + path;
     }
 
+    /**
+     * Construye un {@link Namespace} a partir de una cadena de texto validando fuertemente la correctitud de la
+     * cadena. Para validar la correctitud se utiliza {@link #testFullNamespaceRegex(String)}
+     *
+     * @param maybeNamespace Una cadena de texto potencialmente un namespace.
+     * @return Una nueva instancia de {@link Namespace} si y solo si la cadena dada es correcta.
+     * @throws IllegalArgumentException Cuando se provea null o la cadena de texto sea invalida.
+     */
     public static Namespace fromStringStrict(String maybeNamespace) {
         if (maybeNamespace == null || maybeNamespace.isBlank()) {
             throw new IllegalArgumentException("A namespace-like sequence must be provided");
@@ -165,6 +173,15 @@ public record Namespace(
         return new Namespace(namespace[0], namespace[1]);
     }
 
+
+    /**
+     * Construye un {@link Namespace} a partir de una cadena de texto validando debilmente la correctitud de la
+     * cadena. Para validar la correctitud se utiliza {@link #testAnyNamespaceRegex(String)}
+     *
+     * @param maybeNamespace Una cadena de texto potencialmente un namespace.
+     * @return Una nueva instancia de {@link Namespace} si no contiene caracteres ilegales.
+     * @throws IllegalArgumentException Cuando se provea null o la cadena de texto sea invalida.
+     */
     public static Namespace fromString(String maybeNamespace) {
         final boolean isNamespaceValid = testAnyNamespaceRegex(maybeNamespace);
 
@@ -181,10 +198,26 @@ public record Namespace(
         return new Namespace(namespace[0], namespace[1]);
     }
 
+    /**
+     * Construye un {@link Namespace} ligado al dominio {@link Namespace#MINECRAFT} y dado el path del recurso.
+     * Este metodo no valida la correctitud del recurso recomendamos utilizar un metodo de validacion previo para
+     * evitar futuros inconvenientes.
+     *
+     * @param resource El recurso que se trata identificar en este dominio.
+     * @return Una nueva instancia de {@link Namespace}.
+     */
     public static Namespace fromMinecraft(@Pattern(NAMESPACE_PATH) String resource) {
         return new Namespace(MINECRAFT, resource);
     }
 
+    /**
+     * Construye un {@link Namespace} ligado al dominio {@link Namespace#BOOMERANG} y dado el path del recurso.
+     * Este metodo no valida la correctitud del recurso recomendamos utilizar un metodo de validacion previo para
+     * evitar futuros inconvenientes.
+     *
+     * @param resource El recurso que se trata identificar en este dominio.
+     * @return Una nueva instancia de {@link Namespace}.
+     */
     public static Namespace fromBoomerang(@Pattern(NAMESPACE_PATH) String resource) {
         return new Namespace(BOOMERANG, resource);
     }

@@ -11,6 +11,12 @@ import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/**
+ * Un codec es un subtipo de {@link Type} que abstrae el comportamiento de serializacion y deserializacion de los
+ * paquetes del protocolo.
+ *
+ * @param <P> Un subtipo de {@link Packet}.
+ */
 public interface Codec<P extends Packet> extends Type<P>, Identified {
 
     void write(@NotNull ByteBuf buffer, P packet) throws IOException;

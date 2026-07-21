@@ -10,13 +10,13 @@ import java.io.File;
  * Minecraft Vanilla. En BoomerangMC los plugins se ven representados atravéz de {@link Pluggable}. Este establece un
  * contrato para el ciclo de vida del plugin, sus artefactos, eventos y manejadores de eventos.
  *
- * <h3>Artifacts</h3>
+ * <h2>Artifacts</h2>
  * Los artefactos son recursos autogestionados por el plugin necesarios en el correcto ciclo de vidad del servidor.
  * Estos pueden ser archivos de configuracion, bases de datos en archivos, packs de texturas, datapacks, etc.
  * Generalmente cada plugin tiene su directorio de trabajo donde se encuentran estos artefactos y se pueden recuperar
  * atravéz de {@link #getPluginResource()}.
  *
- * <h3>Manifest</h3>
+ * <h2>Manifest</h2>
  * El manifiesto es un artefacto indispensable para el correcto funcionamiento de un plugin ya que define como el
  * software del servidor debera localizar y manipular el archivo.
  *
@@ -24,8 +24,14 @@ import java.io.File;
  */
 public interface Pluggable {
 
+    /**
+     * Recupera el directorio donde se alojan los recursos de este plugin.
+     */
     File getPluginResource();
 
+    /**
+     * Recupera una instancia del fichero {@code manifest.properties} de ese plugin.
+     */
     PluginManifest getPluginManifest();
 
     PluginFuture<Void> pluginLoaded(PluginServerContext ctx);

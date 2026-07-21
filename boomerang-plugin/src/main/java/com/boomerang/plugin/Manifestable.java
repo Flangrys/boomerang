@@ -4,12 +4,12 @@ package com.boomerang.plugin;
 import com.boomerang.plugin.loader.PluginClassLoader;
 
 /**
- * Este contrato representa el contenedor de información que replica al archivo de manifiesto
- * <code>manifest.properties</code>. La información que recauda es necesaria para que {@link PluginClassLoader} pueda
- * cargar e inyectar el plugin en el servidor.
+ * Representa un contenedor de informacion que imita al archivo {@code manifest.properties}. El proposito del
+ * manifiesto es declarar los comportamientos del plugin como la clase principal, nombre, version y descripción del
+ * plugin; y otra información relevante.
  *
- * @see PluginManifest Para conocer como se obtiene esta información
- * @see PluginClassLoader Para conocer como se carga un plugin a partir del manifiesto.
+ * @see PluginManifest
+ * @see PluginClassLoader
  */
 public interface Manifestable {
 
