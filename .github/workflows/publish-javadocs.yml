@@ -16,7 +16,6 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ github.token }}
           javadoc-branch: docs/javadocs
-          target-folder: javadocs
           java-version: 21
           project: gradle
           custom-command: gradle allJavadoc
