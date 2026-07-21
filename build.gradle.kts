@@ -1,6 +1,7 @@
 plugins {
-    id("java")
-    id("com.gradleup.shadow") version "9.2.0"
+    id("java") apply true
+    id("com.gradleup.shadow") version "9.2.0" apply true
+    id("aggregate-javadocs")
 }
 
 repositories {
@@ -24,9 +25,6 @@ buildscript {
     }
 
 }
-
-apply(plugin = "java")
-apply(plugin = "com.gradleup.shadow")
 
 
 tasks.shadowJar {
