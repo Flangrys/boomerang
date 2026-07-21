@@ -6,10 +6,34 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Locale;
 
+/**
+ * Los Resource Locators o {@link Namespace} son un tipo de identificador que permite distingir recursos contenidos
+ * en un mismo grupo. Todos los Namespaces estan formados por un dominio y un path donde el dominio es simplemente el
+ * nombre del grupo padre que contiene estos recursos, mientras que el path suele verse como la ruta de un directorio
+ * o simplemente un nombre.
+ *
+ * <h3>Spec</h3>
+ * Formalmente un {@link Namespace} se define como una secuencia de caracteres alfanumericos, separados por puntos,
+ * guines medios, giones bajos y barras curvas, este ultimo siendo esclusivo del path. Separados por un ':' de modo
+ * que a la izquierda se encuentre el dominio y del lado derecho el path del recurso.
+ *
+ * <pre>
+ *  word         := [a-z0-9]+
+ *  domain       := word(?:[._-]+word)*
+ *  path         := word(?:[._/-]+word)*
+ *  namespace    := domain:path
+ * <pre>
+ *
+ * @see <a href="https://www.minecraft.net/en-us/article/minecraft-snapshot-17w43a">Snapshot 1.13</a>
+ */
 public record Namespace(
-        @Pattern(DOMAIN_LIKE_REGEX) String domain,
-        @Pattern(RESOURCE_LIKE_REGEX) String resource
+        @Pattern(NAMESPACE_DOMAIN) String domain,
+        @Pattern(NAMESPACE_PATH) String path
 ) {
+
+    public static final char NAMESPACE_TAG = '#';
+
+    public static final String NAMESPACE_DIVIDER = ":";
 
     @RegExp
     public static final String MINECRAFT = "minecraft";
@@ -17,92 +41,151 @@ public record Namespace(
     @RegExp
     public static final String BOOMERANG = "boomerang";
 
-    @RegExp
-    public static final String NAMESPACE_SEPARATORS = "[./]";
 
     @RegExp
-    public static final String NAMESPACE_DIVIDER = ":";
+    public static final String NAMESPACE_WORD = "[a-z0-9]+";
 
     @RegExp
-    public static final String NAMESPACE_INDENT = "[a-z0-9_-]+";
+    public static final String NAMESPACE_DOMAIN = "#?[a-z0-9]+";
 
     @RegExp
-    public static final String DOMAIN_LIKE_REGEX = "^#?[a-z0-9_-]+";
+    public static final String NAMESPACE_PATH = NAMESPACE_WORD + "(?:[._/-]+[a-z0-9]+)*";
 
     @RegExp
-    public static final String RESOURCE_LIKE_REGEX = NAMESPACE_INDENT + "(?:[./][a-z0-9_-]+)*$";
+    public static final String NAMESPACE_REGEX = NAMESPACE_DOMAIN + ":" + NAMESPACE_PATH;
 
-    @RegExp
-    public static final String NAMESPACE_REGEX = DOMAIN_LIKE_REGEX + ":" + RESOURCE_LIKE_REGEX;
+    private static final java.util.regex.Pattern NAMESPACE_COMPILED_PATTERN = java.util.regex.Pattern.compile(NAMESPACE_REGEX);
 
-    private static boolean testLegalCharactersInNamespace(int c) {
-        final var isComponent = c == '_' || c == '.' || c == '-' || c == '/' || c == ':';
-
-        return c == '#' || Character.isLetterOrDigit(c) || isComponent;
+    /**
+     * Prueba que la secuencia dada cumpla parcialmente con la forma del {@link Namespace}. Notar que esta operación
+     * no garantiza estrictamente la forma del namespace pudiendo resultar en falsos positivos.
+     *
+     * <p> Esta prueba utiliza captura solamente quellos caracteres legales en la secuencia pero no valida la
+     * morfología. A diferencia de {@link #testFullNamespaceRegex(String)} que captura un unico namespace.
+     *
+     * <p>Esta opcion esta diseñada para escenarios simples, donde se precisa velocidad antes que la seguridad, Sin
+     * embargo esto puede producir que el sistema falle cuando menos se espere. En estos casos recomendamos
+     * encarecidamente utilizar test unitaros y end-to-end para validar que se esta produciendo y consumiendo
+     * correctamente.
+     *
+     * @param namespace Una secuencia de caracteres, potencialmente un namespace.
+     * @return {@code true} Si y solo si la totalidad de la secuencia corresponde con un namespace.
+     */
+    public static boolean testAnyNamespaceRegex(String namespace) {
+        return namespace.chars().allMatch(c -> {
+            return Character.isDigit(c) || (Character.isLetter(c) && Character.isLowerCase(c))
+                    || c == '#'
+                    || c == ':'
+                    || c == '-'
+                    || c == '_'
+                    || c == '.'
+                    || c == '/';
+        });
     }
 
+    /**
+     * Prueba que la secuencia dada cumpla estrictamente con la expresion regular formal del {@link Namespace}. Notar
+     * que esta operacion es sustancialmente costosa a costa de garantizar la integridad de una secuencia aleatoria.
+     *
+     * <p>Esta prueba utiliza una expresion regular fuerte que captura la totalidad del namespace pudiendo garantizar
+     * que algunos edge-cases de {@link #testAnyNamespaceRegex(String)} puede omitir.
+     *
+     * <p>Esta opción fue diseñada para escenarios concretos donde se precisa garantizar al máximo que un namespace
+     * sea totalmente valido. Sin embargo el coste de las expresiones regulares no justifica utilizarlo en todos los
+     * escenarios, especialmente en la etapa de red.
+     *
+     * @param namespace Una secuencia de caracteres, potencialmente un namespace.
+     * @return {@code true} Si y solo si la totalidad de la secuencia corresponde con un namespace.
+     */
+    public static boolean testFullNamespaceRegex(String namespace) {
+        return NAMESPACE_COMPILED_PATTERN.matcher(namespace).matches();
+    }
+
+    /**
+     * Construye un {@link Namespace} dado un dominio y una ruta, uniendo ambas unidades con
+     * {@link Namespace#NAMESPACE_DIVIDER} y sin validar la morfología del namespace producido.
+     *
+     * <h2>IMPORTANTE</h2>
+     * <p>Este constructor esta pensado escenarios donde las garantias de que cualquier secuencia aleatoria de
+     * caracteres sea un {@link Namespace} sean del cien por cien. Recomendamos utilizar este constructor solamente
+     * cuando sea estrictamente necesario hardcodear un namespace.
+     *
+     * @param domain El identificador del grupo al que corresponde el recurso.
+     * @param path   La ruta que localiza al recurso en este dominio.
+     * @see #fromString(String)
+     * @see #fromStringStrict(String)
+     * @see #fromMinecraft(String)
+     * @see #fromBoomerang(String)
+     */
     public Namespace {
         if (domain == null || domain.isBlank()) {
             throw new IllegalArgumentException("Namespaces should start with namespace valid domain");
         }
 
-        if (resource == null || resource.isBlank()) {
-            throw new IllegalArgumentException("Namespaces should start with namespace valid resource");
+        if (path == null || path.isBlank()) {
+            throw new IllegalArgumentException("Namespaces should start with namespace valid path");
         }
 
         domain = domain.toLowerCase(Locale.ENGLISH);
-        resource = resource.toLowerCase(Locale.ENGLISH);
+        path = path.toLowerCase(Locale.ENGLISH);
     }
 
     public boolean isTag() {
-        return this.domain.charAt(0) == '#';
+        return this.domain.charAt(0) == NAMESPACE_TAG;
     }
 
-    public Schema getSchema() {
-        final var parent = this.isTag()
-                ? this.domain.subSequence(1, 9)
-                : this.domain.subSequence(0, 8);
-
-        return switch (parent.toString()) {
-            case MINECRAFT -> Schema.MINECRAFT;
-            case BOOMERANG -> Schema.BOOMERANG;
-            default -> Schema.OTHER;
-        };
-    }
-
+    /**
+     * Devuelve este namespace en forma de {@link String} sin importar si la secuencia formada es valida.
+     *
+     * @return Una cadena de texto con la forma {@code minecraft:cobblestone}
+     */
     @Override
     @NotNull
     public String toString() {
-        return domain + ":" + resource;
+        return domain + ":" + path;
     }
 
-    public static Namespace fromString(String namespaceMaybe) {
-        final boolean validNamespaceCharacters = namespaceMaybe.chars()
-                .map(c -> (char) c)
-                .anyMatch(Namespace::testLegalCharactersInNamespace);
-
-        if (validNamespaceCharacters) {
-            throw new IllegalArgumentException("Illegal characters in namespace. Only allowed [namespace-z0-9/._-] : " + namespaceMaybe);
+    public static Namespace fromStringStrict(String maybeNamespace) {
+        if (maybeNamespace == null || maybeNamespace.isBlank()) {
+            throw new IllegalArgumentException("A namespace-like sequence must be provided");
         }
 
-        final var namespace = namespaceMaybe.split(":");
+        final boolean isNamespaceValid = testFullNamespaceRegex(maybeNamespace);
+
+        if (!isNamespaceValid) {
+            throw new IllegalArgumentException("An invalid namespace were provided: " + maybeNamespace);
+        }
+
+        final String[] namespace = maybeNamespace.split(NAMESPACE_DIVIDER);
 
         if (namespace.length != 2) {
-            throw new IllegalArgumentException("Invalid namespace format provided: " + namespaceMaybe);
+            throw new IllegalArgumentException("Could not parse the provided namespace: " + maybeNamespace);
         }
 
         return new Namespace(namespace[0], namespace[1]);
     }
 
-    public static Namespace fromMinecraft(@Pattern(RESOURCE_LIKE_REGEX) String resource) {
+    public static Namespace fromString(String maybeNamespace) {
+        final boolean isNamespaceValid = testAnyNamespaceRegex(maybeNamespace);
+
+        if (!isNamespaceValid) {
+            throw new IllegalArgumentException("An invalid namespace were provided: " + maybeNamespace);
+        }
+
+        final String[] namespace = maybeNamespace.split(NAMESPACE_DIVIDER);
+
+        if (namespace.length != 2) {
+            throw new IllegalArgumentException("Could not parse the provided namespace: " + maybeNamespace);
+        }
+
+        return new Namespace(namespace[0], namespace[1]);
+    }
+
+    public static Namespace fromMinecraft(@Pattern(NAMESPACE_PATH) String resource) {
         return new Namespace(MINECRAFT, resource);
     }
 
-    public static Namespace fromBoomerang(@Pattern(RESOURCE_LIKE_REGEX) String resource) {
+    public static Namespace fromBoomerang(@Pattern(NAMESPACE_PATH) String resource) {
         return new Namespace(BOOMERANG, resource);
-    }
-
-    public static enum Schema {
-        MINECRAFT, BOOMERANG, OTHER;
     }
 }
