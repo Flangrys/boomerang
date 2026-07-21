@@ -19,4 +19,4 @@ jobs:
           target-folder: javadoc
           java-version: 21
           project: gradle
-          custom-command: allJavadoc
+          custom-command: gradle allJavadoc
