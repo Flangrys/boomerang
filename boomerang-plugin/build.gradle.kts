@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "com.boomerang.plugin"
-version = "unspecified"
+version = "1.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
